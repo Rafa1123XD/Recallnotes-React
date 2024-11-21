@@ -1,0 +1,35 @@
+/* Container principal usando Flexbox */
+.notes-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+    background-color: white;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.editor-placeholder {
+    font-size: 1rem;
+    color: #666;
+}
+
+/* Media Queries para diferentes tamanhos de tela */
+@media (max-width: 768px) {
+    .editor-placeholder {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .editor-placeholder {
+        font-size: 0.8rem;
+        padding: 0.25rem;
+    }
+}

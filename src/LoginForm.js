@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import "./styles/Auth.css";
 
 function LoginForm({ onLogin }) {
     const [email, setEmail] = useState("");
@@ -31,25 +32,27 @@ function LoginForm({ onLogin }) {
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <h2>Login</h2>
-            {error && <p style={{ color: "red" }}>{error}</p>}
-            <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                required
-            />
-            <input
-                type="password"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                placeholder="Senha"
-                required
-            />
-            <button type="submit">Entrar</button>
-        </form>
+        <div className="auth-container">
+            <form className="auth-form" onSubmit={handleSubmit}>
+                <h2>Login</h2>
+                {error && <p className="error-message">{error}</p>}
+                <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email"
+                    required
+                />
+                <input
+                    type="password"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    placeholder="Senha"
+                    required
+                />
+                <button type="submit">Entrar</button>
+            </form>
+        </div>
     );
 }
 

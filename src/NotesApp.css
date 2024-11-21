@@ -1,0 +1,65 @@
+/* Variáveis globais */
+:root {
+    --editor-height: calc(100vh - 23px);
+    --primary-color: rgba(0, 120, 215, 0.2);
+    --status-bar-height: 23px;
+}
+
+/* Container principal */
+.notes-container {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* Área do editor */
+.editor-area {
+    flex: 1;
+    width: 100%;
+    height: var(--editor-height);
+    padding: 10px;
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow: auto;
+    background-color: white;
+    color: black;
+    box-sizing: border-box;
+    caret-color: black;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Reset global para editor e elementos contentEditable */
+.editor-area,
+[contenteditable],
+[contenteditable]:focus {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* Estilos de seleção unificados */
+.editor-area::selection,
+.editor-area::-moz-selection {
+    background-color: var(--primary-color) !important;
+    color: inherit !important;
+}
+
+/* Barra de status */
+.status-bar {
+    height: var(--status-bar-height);
+    background-color: #f0f0f0;
+    border-top: 1px solid #d4d4d4;
+    padding: 2px 8px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    color: black;
+}

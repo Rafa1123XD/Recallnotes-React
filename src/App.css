@@ -1,8 +1,11 @@
 .App {
-  text-align: center;
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+  text-align: left;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
 .App-logo {
@@ -44,6 +47,7 @@
   max-width: 400px;
   margin: 0 auto;
   padding: 20px;
+  min-height: 5vh;
 }
 
 form {
@@ -58,6 +62,7 @@ input {
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 16px;
+  width: 90%;
 }
 
 button {
@@ -107,4 +112,143 @@ p {
 
 h1, h2, h3 {
   color: #333;
+}
+
+.sidebar {
+  background-color: #1e1e1e;
+  padding: 20px;
+  border-right: 1px solid #3c3c3c;
+  color: white;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+}
+
+.file-item {
+  padding: 8px 12px;
+  margin: 4px 0;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.file-item:hover {
+  background-color: #3c3c3c;
+}
+
+.folder {
+  margin-bottom: 15px;
+}
+
+.folder-name {
+  padding: 8px 12px;
+  color: #888;
+  font-size: 14px;
+}
+
+.main-content {
+  padding: 20px;
+  color: white;
+  background-color: white !important;
+}
+
+.toolbar {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.toolbar button {
+  background-color: #3c3c3c;
+  border: 1px solid #4c4c4c;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.toolbar button:hover {
+  background-color: #4c4c4c;
+}
+
+.menu-item {
+  background: none !important;
+  color: black !important;
+}
+
+/* Layout responsivo usando Flexbox */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Container responsivo para notas */
+.notas-section {
+  width: 100%;
+  padding: 1rem;
+}
+
+/* Media queries para diferentes tamanhos de tela */
+@media (max-width: 768px) {
+  .notasContainer {
+    padding: 0.5rem;
+  }
+  
+  .notaPostIt {
+    width: calc(50% - 20px) !important;
+  }
+  
+  .input {
+    width: 90% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .notaPostIt {
+    width: 100% !important;
+    margin: 10px 0 !important;
+  }
+  
+  .auth-container {
+    width: 90%;
+    padding: 10px;
+  }
+  
+  .users-list {
+    padding: 10px;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  h2 {
+    font-size: 1.2rem;
+  }
+}
+
+/* Unidades relativas para tipografia */
+.responsive-text {
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.auth-form input {
+  width: 90%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: none;
+  border-radius: 4px;
+  background-color: #f0f2f5;
+  font-size: 0.9rem;
 }
