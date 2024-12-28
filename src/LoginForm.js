@@ -22,6 +22,7 @@ function LoginForm({ onLogin }) {
             const data = await response.json();
             
             if (response.ok) {
+                console.log("Dados do usuário após login:", data);
                 onLogin(data);
             } else {
                 setError(data.message || "Erro ao fazer login");

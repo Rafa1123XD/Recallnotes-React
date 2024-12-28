@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import UsuarioForm from "./UsuarioForm";
 import LoginForm from "./LoginForm";
 import "./App.css";
@@ -8,17 +8,29 @@ function App() {
     const [usuarioLogado, setUsuarioLogado] = useState(null);
     const [mostrarCadastro, setMostrarCadastro] = useState(false);
     const [notas, setNotas] = useState([]);
-    const [nota, setNota] = useState('');
-    const [itens, setItens] = useState('');
-    const [editandoIndice, setEditandoIndice] = useState(null); // Indica qual nota está sendo editada
+    const [notaSelecionada, setNotaSelecionada] = useState(null);
+    const [categoriaAtual, setCategoriaAtual] = useState('todas');
+    const [categorias] = useState(['todas', 'favoritas', 'tarefas', 'pessoal']);
+    const [salvandoNota, setSalvandoNota] = useState(false);
+    const timeoutRef = useRef(null);
 
-    // Carregar usuários quando um usuário estiver logado
     useEffect(() => {
         if (usuarioLogado) {
             fetch("/api/usuarios")
                 .then((response) => response.json())
                 .then((data) => setUsuarios(data))
                 .catch((error) => console.error("Erro ao carregar usuários:", error));
+        }
+    }, [usuarioLogado]);
+
+    useEffect(() => {
+        if (usuarioLogado) {
+            fetch(`/api/notas/${usuarioLogado.id}`)
+                .then(response => response.json())
+                .then(data => {
+                    setNotas(data);
+                })
+                .catch(error => console.error("Erro ao carregar notas:", error));
         }
     }, [usuarioLogado]);
 
@@ -58,43 +70,114 @@ function App() {
         setUsuarios([]);
     };
 
-    // Função para adicionar ou editar a nota
-    const adicionarNota = () => {
-        if (nota.trim()) {
-            if (editandoIndice !== null) {
-                // Se estamos editando uma nota existente
-                const novasNotas = [...notas];
-                novasNotas[editandoIndice] = { ...novasNotas[editandoIndice], nome: nota, itens: itens.split(',') };
-                setNotas(novasNotas);
-                setEditandoIndice(null); // Limpa o índice de edição
-            } else {
-                setNotas([...notas, { nome: nota, itens: itens.split(',') }]);
+    // Função para criar nova nota
+    const novaNota = async () => {
+        if (!usuarioLogado || !usuarioLogado.id) {
+            console.error("Usuário não está logado");
+            return;
+        }
+
+        try {
+            const novaNota = {
+                titulo: 'Nova nota',
+                conteudo: '',
+                categoria: categoriaAtual === 'todas' ? 'pessoal' : categoriaAtual,
+                usuarioId: usuarioLogado.id
+            };
+
+            console.log("Enviando requisição para criar nota:", novaNota); // Log para debug
+
+            const response = await fetch("/api/notas", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(novaNota)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Erro ao criar nota');
             }
-            setNota(''); // Limpa o campo de entrada do título da nota
-            setItens(''); // Limpa o campo de entrada dos itens
+
+            const notaSalva = await response.json();
+            console.log("Nota criada com sucesso:", notaSalva); // Log para debug
+            
+            setNotas(notasAtuais => [notaSalva, ...notasAtuais]);
+            setNotaSelecionada(notaSalva);
+        } catch (error) {
+            console.error("Erro ao criar nota:", error);
         }
     };
 
-    // Função para remover uma nota
-    const removerNota = (indice) => {
-        const novasNotas = notas.filter((_, i) => i !== indice);
-        setNotas(novasNotas);
+    // Função para atualizar nota
+    const atualizarNota = (id, mudancas) => {
+        const notasAtualizadas = notas.map(nota => 
+            nota._id === id ? { ...nota, ...mudancas } : nota
+        );
+        setNotas(notasAtualizadas);
+        
+        if (notaSelecionada && notaSelecionada._id === id) {
+            setNotaSelecionada(prev => ({ ...prev, ...mudancas }));
+        }
+        
+        // Debounce para salvar no servidor
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        
+        setSalvandoNota(true);
+        
+        timeoutRef.current = setTimeout(async () => {
+            try {
+                const response = await fetch(`/api/notas/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ...mudancas,
+                        usuarioId: usuarioLogado.id,
+                        dataAtualizacao: new Date()
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Erro ao salvar nota');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar nota:', error);
+            } finally {
+                setSalvandoNota(false);
+            }
+        }, 1000);
     };
 
-    // Função para remover um item específico de uma nota
-    const removerItem = (notaIndice, itemIndice) => {
-        const novasNotas = [...notas];
-        novasNotas[notaIndice].itens = novasNotas[notaIndice].itens.filter((_, i) => i !== itemIndice);
-        setNotas(novasNotas);
+    const mudarCategoria = (notaId, novaCategoria) => {
+        const notasAtualizadas = notas.map(nota => 
+            nota.id === notaId ? { ...nota, categoria: novaCategoria } : nota
+        );
+        setNotas(notasAtualizadas);
+        
+        if (notaSelecionada && notaSelecionada.id === notaId) {
+            setNotaSelecionada(prev => ({ ...prev, categoria: novaCategoria }));
+        }
     };
 
-    // Função para adicionar um item dentro de uma nota existente
-    const adicionarItem = (notaIndice) => {
-        if (itens.trim()) {
-            const novasNotas = [...notas];
-            novasNotas[notaIndice].itens.push(itens);
-            setNotas(novasNotas);
-            setItens(''); // Limpa o campo de entrada do item
+    const deletarNota = async (notaId) => {
+        try {
+            const response = await fetch(`/api/notas/${notaId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                setNotas(notas.filter(nota => nota._id !== notaId));
+                if (notaSelecionada?._id === notaId) {
+                    setNotaSelecionada(null);
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao deletar nota:', error);
         }
     };
 
@@ -126,164 +209,92 @@ function App() {
                     )}
                 </div>
             ) : (
-                <div className="dashboard">
-                    <div className="user-header">
-                        <h2>Bem-vindo, {usuarioLogado.nome}!</h2>
-                        <button onClick={handleLogout}>Sair</button>
-                    </div>
-                    
-                    {/* Bloco de Notas */}
-                    <div className="notas-section">
-                        <h3>Bloco de Notas</h3>
-
-                        <div style={styles.inputContainer}>
-                            <input
-                                type="text"
-                                value={nota}
-                                onChange={(e) => setNota(e.target.value)}
-                                style={styles.input}
-                                placeholder="Digite o título da nota"
-                            />
-                            <input
-                                type="text"
-                                value={itens}
-                                onChange={(e) => setItens(e.target.value)}
-                                style={styles.input}
-                                placeholder="Adicione itens (separados por vírgula)"
-                            />
-                            <button onClick={adicionarNota} style={styles.button}>
-                                {editandoIndice !== null ? 'Salvar' : 'Adicionar Nota'}
-                            </button>
+                <div className="app-container">
+                    <div className="sidebar">
+                        <div className="sidebar-header">
+                            <button onClick={novaNota}>+ Nova Nota</button>
                         </div>
-
-                        <div style={styles.notasContainer}>
-                            {notas.map((nota, notaIndex) => (
-                                <div key={notaIndex} style={styles.notaPostIt}>
-                                    <h4>{nota.nome}</h4>
-                                    <ul>
-                                        {nota.itens.map((item, itemIndex) => (
-                                            <li key={itemIndex} style={styles.item}>
-                                                {item}
-                                                <button
-                                                    onClick={() => removerItem(notaIndex, itemIndex)}
-                                                    style={styles.removeItemButton}
-                                                >
-                                                    Excluir
-                                                </button>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <input
-                                        type="text"
-                                        value={itens}
-                                        onChange={(e) => setItens(e.target.value)}
-                                        style={styles.input}
-                                        placeholder="Adicionar novo item"
-                                    />
-                                    <button
-                                        onClick={() => adicionarItem(notaIndex)}
-                                        style={styles.button}
-                                    >
-                                        Adicionar Item
-                                    </button>
-                                    <div>
-                                        <button
-                                            onClick={() => setNota(nota.nome) && setItens(nota.itens.join(',')) && setEditandoIndice(notaIndex)}
-                                            style={styles.editButton}
-                                        >
-                                            Editar
-                                        </button>
-                                        <button
-                                            onClick={() => removerNota(notaIndex)}
-                                            style={styles.removeButton}
-                                        >
-                                            Excluir Nota
-                                        </button>
-                                    </div>
+                        <div className="categorias">
+                            {categorias.map(cat => (
+                                <div 
+                                    key={cat}
+                                    className={`categoria ${categoriaAtual === cat ? 'ativa' : ''}`}
+                                    onClick={() => setCategoriaAtual(cat)}
+                                >
+                                    {cat}
                                 </div>
                             ))}
                         </div>
+                        <div className="notas-lista">
+                            {notas
+                                .filter(nota => categoriaAtual === 'todas' || nota.categoria === categoriaAtual)
+                                .map(nota => (
+                                    <div 
+                                        key={nota._id}
+                                        className={`nota-item ${notaSelecionada?._id === nota._id ? 'selecionada' : ''}`}
+                                        onClick={() => setNotaSelecionada(nota)}
+                                    >
+                                        <div className="nota-header">
+                                            <div className="nota-titulo">{nota.titulo}</div>
+                                            <button 
+                                                className="deletar-nota"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deletarNota(nota._id);
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                        <div className="nota-preview">{nota.conteudo.substring(0, 50)}</div>
+                                    </div>
+                                ))}
+                        </div>
+                    </div>
+                    
+                    <div className="editor">
+                        {notaSelecionada ? (
+                            <>
+                                <div className="editor-header">
+                                    <input
+                                        type="text"
+                                        value={notaSelecionada.titulo || ''}
+                                        onChange={(e) => atualizarNota(notaSelecionada._id, { titulo: e.target.value })}
+                                        className="editor-titulo"
+                                        placeholder="Título da nota"
+                                    />
+                                    <select
+                                        value={notaSelecionada.categoria}
+                                        onChange={(e) => mudarCategoria(notaSelecionada._id, e.target.value)}
+                                        className="categoria-selector"
+                                    >
+                                        {categorias
+                                            .filter(cat => cat !== 'todas')
+                                            .map(cat => (
+                                                <option key={cat} value={cat}>
+                                                    {cat}
+                                                </option>
+                                            ))
+                                        }
+                                    </select>
+                                </div>
+                                <textarea
+                                    value={notaSelecionada.conteudo || ''}
+                                    onChange={(e) => atualizarNota(notaSelecionada._id, { conteudo: e.target.value })}
+                                    className="editor-conteudo"
+                                    placeholder="Digite sua nota aqui..."
+                                />
+                            </>
+                        ) : (
+                            <div className="editor-placeholder">
+                                Selecione uma nota ou crie uma nova
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
         </div>
     );
 }
-
-// Estilos simples para o bloco de notas
-const styles = {
-  inputContainer: {
-    marginBottom: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-  },
-  input: {
-    padding: '10px',
-    width: '100%',
-    maxWidth: '400px',
-    fontSize: '16px',
-    borderRadius: '4px',
-    border: '1px solid #ddd',
-    marginBottom: '10px',
-  },
-  button: {
-    padding: '10px 15px',
-    backgroundColor: '#4CAF50',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-  notasContainer: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '1rem',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  notaPostIt: {
-    backgroundColor: '#FFEB3B',
-    padding: '15px',
-    margin: '10px',
-    borderRadius: '10px',
-    width: 'calc(33.33% - 20px)', // 3 colunas por padrão
-    minWidth: '250px',
-    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-    position: 'relative',
-  },
-  item: {
-    display: 'flex',
-    justifyContent: 'space-between',
-  },
-  editButton: {
-    backgroundColor: '#FF9800',
-    color: '#fff',
-    border: 'none',
-    padding: '5px 10px',
-    marginRight: '5px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-  removeButton: {
-    backgroundColor: '#f44336',
-    color: '#fff',
-    border: 'none',
-    padding: '5px 10px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-  removeItemButton: {
-    backgroundColor: '#FF6347',
-    color: '#fff',
-    border: 'none',
-    padding: '3px 6px',
-    marginLeft: '5px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-};
 
 export default App;
